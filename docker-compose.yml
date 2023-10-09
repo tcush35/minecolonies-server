@@ -1,0 +1,93 @@
+version: "3.8"
+
+services:
+  minecraft:
+    container_name: minecolonies
+    image: itzg/minecraft-server
+    ports:
+      - "25565:25565"
+    volumes:
+      - ./minecolonies-server:/data
+      - ../downloads:/downloads
+    environment:
+      EULA: ${EULA}
+      ALLOW_FLIGHT: ${ALLOW_FLIGHT}
+      PVP: ${PVP}
+      VIEW_DISTANCE: ${VIEW_DISTANCE}
+      MAX_PLAYERS: ${MAX_PLAYERS}
+      MOTD: ${MOTD}
+      MOD_PLATFORM: AUTO_CURSEFORGE
+      CF_API_KEY: ${CF_API_KEY}
+      CF_PAGE_URL: ${CF_PAGE_URL}
+      INIT_MEMORY: ${INIT_MEMORY}
+      MAX_MEMORY: ${MAX_MEMORY}
+      ENABLE_ROLLING_LOGS: TRUE
+      RCON_PASSWORD: ${RCON_PASSWORD}
+      OPS: ${OPS}
+    tty: true
+    stdin_open: true
+    # restart: unless-stopped
+    depends_on:
+      restore-backup:
+        condition: service_completed_successfully
+  restore-backup:
+    # Same image as mc, but any base image with bash and tar will work
+    image: itzg/mc-backup
+    container_name: restore-backup
+    restart: no
+    entrypoint: restore-tar-backup
+    volumes:
+      # Must be same mount as mc service, needs to be writable
+      - ./minecolonies-server:/data
+      # Must be same mount as backups service, but can be read-only
+      - ./mc-backups:/backups:ro
+  backups:
+    image: itzg/mc-backup
+    container_name: backups
+    environment:
+      BACKUP_INTERVAL: "15m"
+      PAUSE_IF_NO_PLAYERS: TRUE
+      PLAYERS_ONLINE_CHECK_INTERVAL: "1m"
+      PRUNE_BACKUPS_DAYS: 7
+      RCON_HOST: minecraft
+      RCON_PASSWORD: ${RCON_PASSWORD}
+      PRE_BACKUP_SCRIPT: |
+        echo "Starting backup process."
+      POST_BACKUP_SCRIPT: |
+        echo "Backup complete."
+      # used in place of service healthy, since that wasn't working
+      INITIAL_DELAY: 6m
+    volumes:
+      - ./minecolonies-server:/data:ro
+      - ./mc-backups:/backups
+  # Since Docker's default volume driver creates volumes owned by root, this
+  # init container will change ownership to match final UID of mc service, above
+  init-filebrowser:
+    image: filebrowser/filebrowser
+    container_name: init-filebrowser
+    entrypoint: sh -c
+    command:
+      - "chown -R 1000: /database"
+    restart: no
+    volumes:
+      - filebrowser-db:/database
+  filebrowser:
+    image: filebrowser/filebrowser
+    container_name: filebrowser
+    depends_on:
+      init-filebrowser:
+        condition: service_completed_successfully
+    user: "1000:1000"
+    environment:
+      FB_DATABASE: /database/filebrowser.db
+    volumes:
+      # Default FB_ROOT is /srv
+      # In this example, the left-side needs to be the same as /data volume of mc service
+      - minecolonies-server:/srv
+      - filebrowser-db:/database
+    ports:
+      - "25580:80"
+
+volumes:
+  minecolonies-server: {}
+  filebrowser-db: {}
