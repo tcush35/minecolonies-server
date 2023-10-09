@@ -38,7 +38,7 @@ services:
     entrypoint: restore-tar-backup
     volumes:
       # Must be same mount as mc service, needs to be writable
-      - ./minecolonies-server:/data
+      - ./minecolonies-server/world:/data
       # Must be same mount as backups service, but can be read-only
       - ./mc-backups:/backups:ro
   backups:
@@ -56,9 +56,10 @@ services:
       POST_BACKUP_SCRIPT: |
         echo "Backup complete."
       # used in place of service healthy, since that wasn't working
-      INITIAL_DELAY: 6m
+      INITIAL_DELAY: 20m
+      RCON_RETRY_INTERVAL: 30s
     volumes:
-      - ./minecolonies-server:/data:ro
+      - ./minecolonies-server/world:/data:ro
       - ./mc-backups:/backups
   # Since Docker's default volume driver creates volumes owned by root, this
   # init container will change ownership to match final UID of mc service, above
