@@ -22,7 +22,6 @@ services:
       INIT_MEMORY: ${INIT_MEMORY}
       MAX_MEMORY: ${MAX_MEMORY}
       ENABLE_ROLLING_LOGS: TRUE
-      RCON_PASSWORD: ${RCON_PASSWORD}
       OPS: ${OPS}
     tty: true
     stdin_open: true
@@ -38,7 +37,7 @@ services:
     entrypoint: restore-tar-backup
     volumes:
       # Must be same mount as mc service, needs to be writable
-      - ./minecolonies-server/world:/data
+      - ./minecolonies-server:/data
       # Must be same mount as backups service, but can be read-only
       - ./mc-backups:/backups:ro
   backups:
@@ -50,16 +49,16 @@ services:
       PLAYERS_ONLINE_CHECK_INTERVAL: "1m"
       PRUNE_BACKUPS_DAYS: 7
       RCON_HOST: minecraft
-      RCON_PASSWORD: ${RCON_PASSWORD}
-      PRE_BACKUP_SCRIPT: |
+      PRE_BACKUP_SCRIPT: |-
         echo "Starting backup process."
-      POST_BACKUP_SCRIPT: |
+      POST_BACKUP_SCRIPT: |-
         echo "Backup complete."
       # used in place of service healthy, since that wasn't working
-      INITIAL_DELAY: 20m
-      RCON_RETRY_INTERVAL: 30s
+      INITIAL_DELAY: 5m
+      RCON_RETRIES: 20
+      RCON_RETRY_INTERVAL: 60s
     volumes:
-      - ./minecolonies-server/world:/data:ro
+      - ./minecolonies-server:/data:ro
       - ./mc-backups:/backups
   # Since Docker's default volume driver creates volumes owned by root, this
   # init container will change ownership to match final UID of mc service, above
