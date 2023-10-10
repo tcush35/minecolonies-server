@@ -21,8 +21,9 @@ services:
       CF_PAGE_URL: ${CF_PAGE_URL}
       INIT_MEMORY: ${INIT_MEMORY}
       MAX_MEMORY: ${MAX_MEMORY}
-      ENABLE_ROLLING_LOGS: TRUE
       OPS: ${OPS}
+      ICON: ${ICON}
+      OVERRIDE_ICON: ${OVERRIDE_ICON}
     tty: true
     stdin_open: true
     # restart: unless-stopped
