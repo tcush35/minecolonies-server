@@ -54,8 +54,8 @@ services:
       POST_BACKUP_SCRIPT: |-
         echo "Backup complete."
       # used in place of service healthy, since that wasn't working
-      INITIAL_DELAY: 5m
-      RCON_RETRIES: 20
+      INITIAL_DELAY: 15m
+      RCON_RETRIES: 30
       RCON_RETRY_INTERVAL: 60s
     volumes:
       - ./minecolonies-server:/data:ro
